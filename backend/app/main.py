@@ -8,4 +8,4 @@ app.include_router(certificates.router, prefix="/certificates", tags=["certifica
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to Hacktoberfest Certificate Generator API 🚀"}
+    return {"message": "Welcome to Hacktoberfest Certificate Generator API 🚀. Start contributing today!!!!!"}
