@@ -8,3 +8,6 @@ python-multipart
 sqlalchemy
 psycopg2-binary
 python-dotenv
+pytest
+pytest-asyncio
+httpx
