@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './App.css';
 import Navbar from './components/Navbar/Navbar.jsx';
 import Footer from './components/Footer/Footer.jsx';
-import NotFound from './NotFound.jsx';
+import NotFound from "./pages/NotFound/NotFound.jsx";
 import CertificateForm from './pages/CertificateForm.jsx';
 
 function Home() {
@@ -35,7 +35,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/certificate" element={<CertificateForm />} />
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<NotFound   />} />
       </Routes>
     </BrowserRouter>
   );
