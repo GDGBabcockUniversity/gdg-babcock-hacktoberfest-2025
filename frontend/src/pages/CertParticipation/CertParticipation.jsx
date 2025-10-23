@@ -62,7 +62,7 @@ const CertParticipation = () => {
   return (
     <main style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
       <form className="cert-form" onSubmit={handleSubmit}>
-        <h2>Generate Certificate</h2>
+        <h2>Certificate of Participation</h2>
         <label>
           Name
           <input
