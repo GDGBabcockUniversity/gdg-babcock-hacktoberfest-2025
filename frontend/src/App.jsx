@@ -24,7 +24,7 @@ function App() {
       />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/certificate" element={<CertCompletion />} />
+        <Route path="/completion" element={<CertCompletion />} />
         <Route path="/bulk-certificate" element={<BulkCertificateForm />} />
         <Route path="/participation" element={<CertParticipation />} />
         <Route path="*" element={<NotFound />} />
