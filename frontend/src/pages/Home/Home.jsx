@@ -16,7 +16,7 @@ export default function Home() {
         <div className="feature-card">
           <h3>🏆 Single Certificate</h3>
           <p>Generate a certificate for one participant</p>
-          <Link to="/certificate" className="feature-btn">
+          <Link to="/completion" className="feature-btn">
             Create Certificate
           </Link>
         </div>
