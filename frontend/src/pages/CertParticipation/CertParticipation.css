@@ -1,23 +1,38 @@
-  .cert-form {
-    background: #24262b;
-    color: #fff;
-    padding: 1.2rem 2.5rem 1.2rem 2.5rem;
-    border-radius: 1.5rem;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-    min-width: 400px;
-    max-width: 600px;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
+main.cert-participation-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+  box-sizing: border-box;
+}
+
+.cert-form {
+  background: #24262b;
+  color: #fff;
+  padding: 2rem 2.5rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
 .cert-form h2 {
   margin-bottom: 0.5rem;
   font-size: 2rem;
   font-weight: 700;
   color: #646cff;
 }
+
 .cert-form label {
   display: flex;
   flex-direction: column;
@@ -25,6 +40,7 @@
   gap: 0.3rem;
   font-weight: 500;
 }
+
 .cert-form input[type="text"],
 .cert-form input[type="date"] {
   padding: 0.7rem 1rem;
@@ -34,11 +50,15 @@
   color: #fff;
   font-size: 1rem;
   margin-top: 0.1rem;
+  box-sizing: border-box;
+  width: 100%;
 }
+
 .cert-form input:focus {
   outline: 2px solid #646cff;
   border-color: #646cff;
 }
+
 .cert-form button {
   margin-top: 1rem;
   background: #646cff;
@@ -51,23 +71,136 @@
   cursor: pointer;
   transition: background 0.2s;
 }
+
 .cert-form button:disabled {
   background: #888;
   cursor: not-allowed;
 }
+
+.cert-preview-container {
+  margin-top: 2rem;
+  text-align: center;
+  width: 100%;
+  max-width: 800px;
+  padding: 0 1rem;
+  box-sizing: border-box;
+}
+
+.cert-preview-container h3 {
+  color: #fff;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.cert-preview-container img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #ccc;
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+}
+
+.cert-preview-container button {
+  background: #10b981;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.8rem 2rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cert-preview-container button:hover {
+  background: #059669;
+}
+
 .cert-success {
   margin-top: 1rem;
   color: #10b981;
   font-weight: 600;
   text-align: center;
 }
+
 .cert-success a {
   color: #646cff;
   text-decoration: underline;
 }
+
 .cert-error {
   margin-top: 1rem;
   color: #ff5252;
   font-weight: 600;
   text-align: center;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  main.cert-participation-main {
+    padding: 1rem;
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+
+  .cert-form {
+    padding: 1.5rem 1rem;
+    border-radius: 1rem;
+  }
+
+  .cert-form h2 {
+    font-size: 1.5rem;
+  }
+
+  .cert-form label {
+    font-size: 1rem;
+  }
+
+  .cert-form input[type="text"],
+  .cert-form input[type="date"] {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.95rem;
+  }
+
+  .cert-form button {
+    font-size: 1rem;
+    padding: 0.7rem 0;
+  }
+
+  .cert-preview-container {
+    padding: 0 0.5rem;
+  }
+
+  .cert-preview-container h3 {
+    font-size: 1.2rem;
+  }
+
+  .cert-preview-container button {
+    font-size: 1rem;
+    padding: 0.7rem 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .cert-form {
+    padding: 1.2rem 0.8rem;
+  }
+
+  .cert-form h2 {
+    font-size: 1.3rem;
+  }
+
+  .cert-form label {
+    font-size: 0.95rem;
+  }
+
+  .cert-form input[type="text"],
+  .cert-form input[type="date"] {
+    padding: 0.5rem 0.7rem;
+    font-size: 0.9rem;
+  }
+
+  .cert-preview-container button {
+    width: 100%;
+  }
 }
