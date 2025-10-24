@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar/Navbar.jsx";
 import Footer from "./components/Footer/Footer.jsx";
 import NotFound from "./pages/NotFound/NotFound.jsx";
-import CertCompletion from "./pages/CertificationForm/CertCompletion.jsx";
+import CertCompletion from "./pages/CertCompletion/CertCompletion.jsx";
 import CertParticipation from "./pages/CertParticipation/CertParticipation.jsx";
 import BulkCertificateForm from "./pages/BulkCertificateForm/BulkCertificateForm.jsx";
 import Home from "./pages/Home/Home.jsx";

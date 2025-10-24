@@ -3,6 +3,8 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 2rem 1rem;
+  padding-top: 5rem;
+  padding-bottom: 5rem;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -106,7 +108,7 @@
   background: #ecf0f1;
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
 }
 
 /* CSV Example */
@@ -130,7 +132,7 @@
   padding: 1rem;
   border-radius: 8px;
   overflow-x: auto;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 0.9rem;
   margin: 0;
 }
@@ -325,26 +327,26 @@
   .bulk-certificate-container {
     padding: 1rem;
   }
-  
+
   .bulk-certificate-form {
     padding: 1.5rem;
     margin-top: 1rem;
   }
-  
+
   .mode-selection {
     flex-direction: column;
   }
-  
+
   .participant-row {
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .result-stats {
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .csv-example pre {
     font-size: 0.8rem;
   }
