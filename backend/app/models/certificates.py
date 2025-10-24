@@ -3,7 +3,10 @@ Certificate Models
 Pydantic schemas and ORM models for certificate generation
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel
+from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime, Field, validator
 from typing import Optional, List
 from datetime import datetime
 from uuid import uuid4
