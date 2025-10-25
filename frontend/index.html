@@ -1,14 +1,22 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/gdg-favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="GDG Babcock Certificate Generator - Create and manage certificates for event participants during Hacktoberfest 2025" />
+    <meta name="author" content="GDG Babcock" />
     <title>GDG Babcock Certificate Generator</title>
   </head>
   <body>
-    <div id="root"></div>
+    <noscript>
+      <p style="color: red; text-align: center;">
+        JavaScript is disabled in your browser. Please enable it to use the Certificate Generator.
+      </p>
+    </noscript>
+
+    <div id="root" aria-label="Certificate Generator App"></div>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
