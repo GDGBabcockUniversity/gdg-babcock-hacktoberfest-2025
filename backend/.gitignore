@@ -42,6 +42,7 @@ Thumbs.db
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+app.db
 
 # Ignore Jupyter Notebook checkpoints
 .ipynb_checkpoints/

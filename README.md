@@ -139,6 +139,15 @@ Follow these steps to set up the project locally.
 
 ---
 
+## Database
+
+This project uses **SQLite** for persistent data storage.
+
+- **Database File:** A database file named `app.db` will be automatically created in the root of the project directory when you first run the backend server.
+- **Database Schema:** The database models are defined in `backend/app/models/certificates.py`.
+- **Data Persistence:** Certificate records are now saved to this database and will persist even after the server restarts.
+
+---
 
 ## 🎯 Planned Features
 

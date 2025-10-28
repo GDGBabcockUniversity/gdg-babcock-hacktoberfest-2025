@@ -1,11 +1,12 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 from fastapi.responses import FileResponse
 from ..models.certificates import (
     CertificateCreate, 
     CertificateResponse, 
     Certificate,
     BulkCertificateRequest,
-    BulkCertificateResponse
+    BulkCertificateResponse,
+    CertificateORM
 )
 from ..services.generator import generate_certificate
 from ..services.bulk_generator import (
@@ -15,6 +16,8 @@ from ..services.bulk_generator import (
 )
 import os
 import logging
+from sqlalchemy.orm import Session
+from ..database import get_db
 
 # Logger setup
 logger = logging.getLogger(__name__)
@@ -22,7 +25,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # In-memory store for demo; use DB in production
-certificates = {}
+# certificates = {}
 
 
 @router.post(
@@ -35,7 +38,10 @@ certificates = {}
         500: {"description": "Internal server error during certificate generation"},
     },
 )
-async def create_certificate(cert: CertificateCreate):
+async def create_certificate(
+    cert: CertificateCreate,
+    db: Session = Depends(get_db)
+):
     """
     Create a new digital certificate for a participant.
 
@@ -111,11 +117,19 @@ async def create_certificate(cert: CertificateCreate):
             logger.error(f"Unexpected error during certificate generation: {e}")
             raise HTTPException(status_code=500, detail="Unexpected error during certificate generation.")
 
-        # Save in-memory record
-        certificates[cert_obj.unique_id] = {
-            "data": cert_obj.to_dict(),
-            "file": output_path
-        }
+        # Save to database
+        db_cert = CertificateORM(
+            unique_id=cert_obj.unique_id,
+            participant_name=cert_obj.participant_name,
+            event_name=cert_obj.event_name,
+            date_issued=cert_obj.date_issued,
+            filename=cert_obj.filename,
+            created_at=cert_obj.created_at
+        )
+
+        db.add(db_cert)
+        db.commit()
+        db.refresh(db_cert)
 
         # Successful response
         return CertificateResponse(
@@ -143,7 +157,10 @@ async def create_certificate(cert: CertificateCreate):
         500: {"description": "Internal server error while fetching certificate"},
     },
 )
-async def get_certificate(unique_id: str):
+async def get_certificate(
+    unique_id: str,
+    db: Session = Depends(get_db)
+):
     """
     Retrieve a generated certificate by its unique ID.
 
@@ -171,18 +188,18 @@ async def get_certificate(unique_id: str):
     - This endpoint returns a `FileResponse` (image), not JSON.
     """
     try:
-        cert_info = certificates.get(unique_id)
-        if not cert_info:
+        db_cert = db.query(CertificateORM).filter(CertificateORM.unique_id == unique_id).first()
+        if not db_cert:
             raise HTTPException(status_code=404, detail="Certificate record not found.")
 
-        file_path = cert_info["file"]
+        file_path = os.path.join("certificates", db_cert.filename)
         if not os.path.exists(file_path):
             logger.warning(f"File not found for certificate {unique_id}: {file_path}")
             raise HTTPException(status_code=404, detail="Certificate file missing on server.")
 
         return FileResponse(
             path=file_path,
-            filename=os.path.basename(file_path),
+            filename=db_cert.filename,
             media_type="image/png"
         )
 
