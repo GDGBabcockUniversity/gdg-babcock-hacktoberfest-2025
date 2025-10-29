@@ -64,11 +64,19 @@ def generate_bulk_certificates(
     event_name: str,
     date_issued: str,
     participants: List[BulkCertificateItem],
-    output_dir: str = "certificates/bulk"
+    output_dir: str = "certificates/bulk",
+    certificate_type: str = "participation"
 ) -> Dict[str, Any]:
     """
     Generate certificates for multiple participants
     Returns summary of successful and failed generations
+    
+    Args:
+        event_name: Name of the event
+        date_issued: Date in YYYY-MM-DD format
+        participants: List of participant items
+        output_dir: Directory to save certificates
+        certificate_type: "participation" or "completion" for template selection
     """
     os.makedirs(output_dir, exist_ok=True)
     
@@ -82,12 +90,13 @@ def generate_bulk_certificates(
             filename = f"{safe_name}_{date_issued}_cert.png"
             output_path = os.path.join(output_dir, filename)
             
-            # Generate certificate
+            # Generate certificate with specified type
             generate_certificate(
                 participant.participant_name,
                 event_name,
                 date_issued,
-                output_path
+                output_path,
+                certificate_type=certificate_type
             )
             
             successful.append({

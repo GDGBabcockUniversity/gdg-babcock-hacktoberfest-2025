@@ -6,107 +6,103 @@ def generate_certificate_from_model(cert_data: CertificateBase, output_path="cer
     # Now you can access cert_data.name, cert_data.event, cert_data.date
     return generate_certificate(cert_data.participant_name, cert_data.event_name, cert_data.date_issued, output_path)
 
-def generate_certificate(name, event, date, output_path="certificate.png"):
+def generate_certificate(name, event, date, output_path="certificate.png", certificate_type="participation"):
+    """
+    Generate a certificate by overlaying text on a predefined template image.
+    
+    Args:
+        name: Participant's full name
+        event: Event name
+        date: Date in format YYYY-MM-DD or display format
+        output_path: Where to save the generated certificate
+        certificate_type: "participation" or "completion" to select template
+    
+    Returns:
+        output_path: Path to the generated certificate
+    """
     # Debug: show where it will save
     print("Saving certificate at:", os.path.abspath(output_path))
     
-    # Create certificate with a gradient-like background
-    width, height = 1200, 850
-    certificate = Image.new("RGB", (width, height), color="#f8f9fa")
+    # Determine template path based on certificate type
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))  # Get backend root
+    if certificate_type == "completion":
+        template_path = os.path.join(base_dir, "templates", "completion_template.png")
+    else:  # default to participation
+        template_path = os.path.join(base_dir, "templates", "participation_template.png")
+    
+    # Verify template exists
+    if not os.path.exists(template_path):
+        raise FileNotFoundError(f"Certificate template not found at: {template_path}")
+    
+    # Load the template image
+    certificate = Image.open(template_path)
     draw = ImageDraw.Draw(certificate)
     
-    # Draw decorative border
-    border_color = "#2c3e50"
-    border_width = 15
-    # Outer border
-    draw.rectangle([20, 20, width-20, height-20], outline=border_color, width=border_width)
-    # Inner border (golden accent)
-    draw.rectangle([40, 40, width-40, height-40], outline="#d4af37", width=3)
+    # Get image dimensions
+    width, height = certificate.size
     
-    # Add colored header background
-    draw.rectangle([60, 60, width-60, 200], fill="#2c3e50")
-    
-    # Load fonts with fallback
+    # Load Google Sans fonts
+    fonts_dir = os.path.join(base_dir, "fonts")
     try:
-        font_title = ImageFont.truetype("arial.ttf", 56)
-        font_subtitle = ImageFont.truetype("arial.ttf", 32)
-        font_name = ImageFont.truetype("arialbd.ttf", 48)  # Bold for name
-        font_body = ImageFont.truetype("arial.ttf", 28)
-        font_small = ImageFont.truetype("arial.ttf", 22)
-    except IOError:
-        print("⚠️ TrueType fonts not found. Using default font.")
-        font_title = ImageFont.load_default()
-        font_subtitle = ImageFont.load_default()
-        font_name = ImageFont.load_default()
-        font_body = ImageFont.load_default()
+        font_name_large = ImageFont.truetype(os.path.join(fonts_dir, "GoogleSans-Bold.ttf"), 60)
+        font_name_medium = ImageFont.truetype(os.path.join(fonts_dir, "GoogleSans-Bold.ttf"), 48)
+        font_event = ImageFont.truetype(os.path.join(fonts_dir, "GoogleSans-Medium.ttf"), 36)
+        font_date = ImageFont.truetype(os.path.join(fonts_dir, "GoogleSans-Regular.ttf"), 28)
+        font_small = ImageFont.truetype(os.path.join(fonts_dir, "GoogleSans-Regular.ttf"), 24)
+    except IOError as e:
+        print(f"⚠️ Error loading Google Sans fonts: {e}")
+        print("Using fallback fonts...")
+        # Fallback to default if Google Sans not found
+        font_name_large = ImageFont.load_default()
+        font_name_medium = ImageFont.load_default()
+        font_event = ImageFont.load_default()
+        font_date = ImageFont.load_default()
         font_small = ImageFont.load_default()
     
-    # Helper function to center text
-    def center_text(text, y, font, color="black"):
+    # Helper function to center text horizontally
+    def center_text(text, y, font, color="#000000"):
         bbox = draw.textbbox((0, 0), text, font=font)
         text_width = bbox[2] - bbox[0]
         x = (width - text_width) // 2
         draw.text((x, y), text, font=font, fill=color)
     
-    # Title
-    center_text("CERTIFICATE", 90, font_title, "#d4af37")
-    center_text("OF PARTICIPATION", 155, font_subtitle, "#ffffff")
+    # Text color - dark for visibility on light background
+    text_color = "#1a1a1a"
     
-    # Decorative line
-    draw.line([300, 250, width-300, 250], fill="#d4af37", width=2)
+    # Position text based on template layout
+    # These coordinates are optimized for the GDG certificate templates
+    # Adjust Y positions based on actual template measurements
     
-    # "This is to certify that" text
-    center_text("This certificate is proudly presented to", 300, font_small, "#555555")
+    # Participant Name - positioned in the name area (adjust based on your template)
+    # Using conditional sizing: smaller font if name is long
+    if len(name) > 25:
+        name_font = font_name_medium
+        name_y = 310
+    else:
+        name_font = font_name_large
+        name_y = 300
     
-    # Participant name (highlighted)
-    name_y = 370
-    center_text(name, name_y, font_name, "#2c3e50")
+    center_text(f'"{name}"', name_y, name_font, text_color)
     
-    # Underline for name
-    bbox = draw.textbbox((0, 0), name, font=font_name)
-    name_width = bbox[2] - bbox[0]
-    name_x = (width - name_width) // 2
-    draw.line([name_x, name_y + 60, name_x + name_width, name_y + 60], fill="#d4af37", width=2)
+    # Event Name - positioned below name
+    center_text(f'"{event}"', 430, font_event, text_color)
     
-    # Event details
-    center_text("For outstanding participation in", 480, font_small, "#555555")
-    center_text(event, 530, font_body, "#2c3e50")
+    # Date - positioned near bottom
+    center_text(f'"{date}"', 490, font_date, text_color)
     
-    # Date
-    center_text(f"Dated: {date}", 620, font_small, "#555555")
+    # Save the final certificate
+    certificate.save(output_path, "PNG")
+    print(f"✅ Certificate generated successfully: {output_path}")
     
-    # Add decorative corner elements
-    corner_size = 50
-    corner_color = "#d4af37"
-    # Top-left corner
-    draw.line([60, 60, 60+corner_size, 60], fill=corner_color, width=4)
-    draw.line([60, 60, 60, 60+corner_size], fill=corner_color, width=4)
-    # Top-right corner
-    draw.line([width-60-corner_size, 60, width-60, 60], fill=corner_color, width=4)
-    draw.line([width-60, 60, width-60, 60+corner_size], fill=corner_color, width=4)
-    # Bottom-left corner
-    draw.line([60, height-60, 60+corner_size, height-60], fill=corner_color, width=4)
-    draw.line([60, height-60-corner_size, 60, height-60], fill=corner_color, width=4)
-    # Bottom-right corner
-    draw.line([width-60-corner_size, height-60, width-60, height-60], fill=corner_color, width=4)
-    draw.line([width-60, height-60-corner_size, width-60, height-60], fill=corner_color, width=4)
-    
-    # Signature line
-    sig_y = 720
-    draw.line([150, sig_y, 400, sig_y], fill="#333333", width=2)
-    draw.line([width-400, sig_y, width-150, sig_y], fill="#333333", width=2)
-    center_text("Authorized Signature", sig_y + 10, font_small, "#666666")
-    
-    # Save file
-    certificate.save(output_path)
     return output_path
 
 if __name__ == "__main__":
+    # Test with sample data
     data = CertificateBase(
         participant_name="Jane Doe",
         event_name="Hacktoberfest 2025",
         date_issued="2025-10-03"
     )
 
-    file_path = generate_certificate_from_model(data)
+    file_path = generate_certificate_from_model(data, "test_certificate.png")
     print("✅ Certificate generated at:", file_path)
