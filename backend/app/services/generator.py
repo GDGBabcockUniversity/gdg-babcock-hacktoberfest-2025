@@ -44,17 +44,16 @@ def generate_certificate(name, event, date, output_path="certificate.png", certi
     # Load Google Sans fonts
     fonts_dir = os.path.join(base_dir, "fonts")
     try:
-        font_name_large = ImageFont.truetype(os.path.join(fonts_dir, "GoogleSans-Bold.ttf"), 60)
-        font_name_medium = ImageFont.truetype(os.path.join(fonts_dir, "GoogleSans-Bold.ttf"), 48)
-        font_event = ImageFont.truetype(os.path.join(fonts_dir, "GoogleSans-Medium.ttf"), 36)
-        font_date = ImageFont.truetype(os.path.join(fonts_dir, "GoogleSans-Regular.ttf"), 28)
+        # Font sizes based on Figma specifications
+        font_name = ImageFont.truetype(os.path.join(fonts_dir, "GoogleSans-Bold.ttf"), 39)  # 29.07pt ≈ 39px
+        font_event = ImageFont.truetype(os.path.join(fonts_dir, "GoogleSans-Bold.ttf"), 22)  # 16.15pt ≈ 22px
+        font_date = ImageFont.truetype(os.path.join(fonts_dir, "GoogleSans-Bold.ttf"), 15)  # 16px
         font_small = ImageFont.truetype(os.path.join(fonts_dir, "GoogleSans-Regular.ttf"), 24)
     except IOError as e:
         print(f"⚠️ Error loading Google Sans fonts: {e}")
         print("Using fallback fonts...")
         # Fallback to default if Google Sans not found
-        font_name_large = ImageFont.load_default()
-        font_name_medium = ImageFont.load_default()
+        font_name = ImageFont.load_default()
         font_event = ImageFont.load_default()
         font_date = ImageFont.load_default()
         font_small = ImageFont.load_default()
@@ -66,29 +65,27 @@ def generate_certificate(name, event, date, output_path="certificate.png", certi
         x = (width - text_width) // 2
         draw.text((x, y), text, font=font, fill=color)
     
+    # Helper function to draw text at specific position (left-aligned)
+    def draw_text_at(text, x, y, font, color="#000000"):
+        draw.text((x, y), text, font=font, fill=color)
+    
     # Text color - dark for visibility on light background
     text_color = "#1a1a1a"
     
-    # Position text based on template layout
-    # These coordinates are optimized for the GDG certificate templates
-    # Adjust Y positions based on actual template measurements
+    # Position text based on Figma coordinates
+    # These coordinates match the official GDG certificate templates
     
-    # Participant Name - positioned in the name area (adjust based on your template)
-    # Using conditional sizing: smaller font if name is long
-    if len(name) > 25:
-        name_font = font_name_medium
-        name_y = 310
-    else:
-        name_font = font_name_large
-        name_y = 300
+    # Participant Name - X: 45, Y: 279 (moved 1px up)
+    # Font: Google Sans Bold, 29.07pt (≈39px)
+    draw_text_at(name, 45, 279, font_name, text_color)
     
-    center_text(f'"{name}"', name_y, name_font, text_color)
+    # Event Name - X: 46, Y: 354, W: 148, H: 22
+    # Font: Google Sans Bold, 16.15pt (≈22px)
+    draw_text_at(event, 46, 354, font_event, text_color)
     
-    # Event Name - positioned below name
-    center_text(f'"{event}"', 430, font_event, text_color)
-    
-    # Date - positioned near bottom
-    center_text(f'"{date}"', 490, font_date, text_color)
+    # Date - X: 160, Y: 380 (moved 1px up, size reduced to 20px)
+    # Font: Google Sans Bold, slightly smaller
+    draw_text_at(date, 160, 375, font_date, text_color)
     
     # Save the final certificate
     certificate.save(output_path, "PNG")
