@@ -14,28 +14,28 @@ export default function Home() {
       
       <div className="features-grid">
         <div className="feature-card">
-          <h3>🏆 Single Certificate</h3>
-          <p>Generate a certificate for one participant</p>
+          <h3>� Certificate of Participation</h3>
+          <p>Generate participation certificates for event attendees</p>
+          <Link to="/participation" className="feature-btn">
+            Generate Participation
+          </Link>
+        </div>
+        
+        <div className="feature-card">
+          <h3>🏆 Certificate of Completion</h3>
+          <p>Generate completion certificates for successful participants</p>
           <Link to="/completion" className="feature-btn">
-            Create Certificate
+            Generate Completion
           </Link>
         </div>
         
         <div className="feature-card featured">
           <h3>📋 Bulk Certificates</h3>
-          <p>Generate certificates for multiple participants via CSV upload or manual entry</p>
+          <p>Generate multiple certificates (participation or completion) via CSV upload</p>
           <Link to="/bulk-certificate" className="feature-btn">
             Bulk Generate
           </Link>
           <span className="new-badge">NEW!</span>
-        </div>
-        
-        <div className="feature-card">
-          <h3>🎯 View Certificates</h3>
-          <p>View and manage generated certificates</p>
-          <Link to="/participation" className="feature-btn">
-            View Certificates
-          </Link>
         </div>
       </div>
 

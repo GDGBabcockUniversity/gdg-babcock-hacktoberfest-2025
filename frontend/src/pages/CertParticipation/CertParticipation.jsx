@@ -7,7 +7,7 @@ const CertParticipation = () => {
   const [form, setForm] = useState({
     participant_name: "",
     event_name: "",
-    role: "",
+    certificate_type: "participation",
     date_issued: "",
   });
   const [loading, setLoading] = useState(false);
@@ -33,12 +33,13 @@ const CertParticipation = () => {
         participant_name: form.participant_name,
         event_name: form.event_name,
         date_issued: form.date_issued,
+        certificate_type: form.certificate_type,
       });
 
       setForm({
         participant_name: "",
         event_name: "",
-        role: "",
+        certificate_type: "participation",
         date_issued: "",
       });
 
@@ -70,7 +71,7 @@ const CertParticipation = () => {
   return (
     <main className="cert-participation-main">
       <form className="cert-form" onSubmit={handleSubmit}>
-        <h2>Certificate of Participation</h2>
+        <h2>Certificate Generator</h2>
         <label>
           Name
           <input
@@ -98,14 +99,16 @@ const CertParticipation = () => {
           />
         </label>
         <label>
-          Role
-          <input
-            type="text"
-            name="role"
-            value={form.role}
+          Certificate Type
+          <select
+            name="certificate_type"
+            value={form.certificate_type}
             onChange={handleChange}
-            placeholder="Role (optional)"
-          />
+            required
+          >
+            <option value="participation">Certificate of Participation</option>
+            <option value="completion">Certificate of Completion</option>
+          </select>
         </label>
         <label>
           Date

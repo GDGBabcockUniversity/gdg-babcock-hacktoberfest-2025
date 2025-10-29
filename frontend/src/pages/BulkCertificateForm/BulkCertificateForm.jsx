@@ -7,6 +7,7 @@ const BulkCertificateForm = () => {
   const [form, setForm] = useState({
     event_name: '',
     date_issued: '',
+    certificate_type: 'participation',
   });
   const [csvFile, setCsvFile] = useState(null);
   const [manualParticipants, setManualParticipants] = useState([
@@ -64,6 +65,7 @@ const BulkCertificateForm = () => {
       formData.append('csv_file', csvFile);
       formData.append('event_name', form.event_name);
       formData.append('date_issued', form.date_issued);
+      formData.append('certificate_type', form.certificate_type);
 
       const response = await axios.post(
         `${API_BASE_URL}/certificates/bulk/csv`,
@@ -82,7 +84,7 @@ const BulkCertificateForm = () => {
       );
 
       // Reset form
-      setForm({ event_name: '', date_issued: '' });
+      setForm({ event_name: '', date_issued: '', certificate_type: 'participation' });
       setCsvFile(null);
       document.querySelector('input[type="file"]').value = '';
 
@@ -113,7 +115,8 @@ const BulkCertificateForm = () => {
       const response = await axios.post(`${API_BASE_URL}/certificates/bulk`, {
         event_name: form.event_name,
         date_issued: form.date_issued,
-        participants: validParticipants
+        participants: validParticipants,
+        certificate_type: form.certificate_type
       });
 
       setResult(response.data);
@@ -123,7 +126,7 @@ const BulkCertificateForm = () => {
       );
 
       // Reset form
-      setForm({ event_name: '', date_issued: '' });
+      setForm({ event_name: '', date_issued: '', certificate_type: 'participation' });
       setManualParticipants([{ participant_name: '', email: '' }]);
 
     } catch (error) {
@@ -197,6 +200,20 @@ const BulkCertificateForm = () => {
               onChange={handleFormChange}
               required
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="certificate_type">Certificate Type *</label>
+            <select
+              id="certificate_type"
+              name="certificate_type"
+              value={form.certificate_type}
+              onChange={handleFormChange}
+              required
+            >
+              <option value="participation">Certificate of Participation</option>
+              <option value="completion">Certificate of Completion</option>
+            </select>
           </div>
 
           {/* CSV Upload Mode */}
