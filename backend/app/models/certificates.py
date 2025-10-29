@@ -31,6 +31,17 @@ class CertificateBase(BaseModel):
         ...,
         description="Date when certificate was issued (YYYY-MM-DD format)"
     )
+    certificate_type: str = Field(
+        default="participation",
+        description="Type of certificate: 'participation' or 'completion'"
+    )
+    
+    @validator('certificate_type')
+    def validate_certificate_type(cls, v):
+        """Validate certificate type"""
+        if v not in ['participation', 'completion']:
+            raise ValueError('Certificate type must be either "participation" or "completion"')
+        return v
     
     @validator('participant_name')
     def validate_participant_name(cls, v):
@@ -116,12 +127,23 @@ class BulkCertificateRequest(BaseModel):
     event_name: str = Field(..., min_length=3, max_length=200)
     date_issued: str = Field(..., description="Date in YYYY-MM-DD format")
     participants: List[BulkCertificateItem] = Field(..., min_items=1, max_items=100)
+    certificate_type: str = Field(
+        default="participation",
+        description="Type of certificate: 'participation' or 'completion'"
+    )
     
     @validator('event_name')
     def validate_event_name(cls, v):
         if not v.strip():
             raise ValueError('Event name cannot be empty')
         return v.strip()
+    
+    @validator('certificate_type')
+    def validate_certificate_type(cls, v):
+        """Validate certificate type"""
+        if v not in ['participation', 'completion']:
+            raise ValueError('Certificate type must be either "participation" or "completion"')
+        return v
 
 
 class BulkCertificateResponse(BaseModel):

@@ -105,7 +105,8 @@ async def create_certificate(
                 cert_obj.participant_name,
                 cert_obj.event_name,
                 cert_obj.date_issued,
-                output_path
+                output_path,
+                certificate_type=cert.certificate_type
             )
         except FileNotFoundError as e:
             logger.error(f"Template file missing: {e}")
@@ -224,7 +225,8 @@ async def create_bulk_certificates(request: BulkCertificateRequest):
             event_name=request.event_name,
             date_issued=request.date_issued,
             participants=request.participants,
-            output_dir=output_dir
+            output_dir=output_dir,
+            certificate_type=request.certificate_type
         )
         
         download_url = None
@@ -254,6 +256,7 @@ async def create_bulk_certificates(request: BulkCertificateRequest):
 async def create_bulk_certificates_from_csv(
     event_name: str,
     date_issued: str,
+    certificate_type: str = "participation",
     csv_file: UploadFile = File(...)
 ):
     """
@@ -282,7 +285,8 @@ async def create_bulk_certificates_from_csv(
         bulk_request = BulkCertificateRequest(
             event_name=event_name,
             date_issued=date_issued,
-            participants=participants
+            participants=participants,
+            certificate_type=certificate_type
         )
         
         # Generate certificates
