@@ -2,8 +2,14 @@ import './Navbar.css';
 
 const Navbar = () => (
   <nav className="navbar">
-    <span className="navbar__brand">GDG Babcock Hacktoberfest</span>
+    <img
+      src="/gdg-favicon.svg"
+      alt="GDG Babcock logo"
+      className="navbar__logo"
+      aria-hidden="false"
+    />
+    <span className="navbar__brand">GDG Babcock</span>
   </nav>
 );
 
-export default Navbar;
+export default Navbar; 

@@ -7,14 +7,14 @@ export default function Home() {
 
   return (
     <main className="home-main">
-      <h1>🎓 GDG Babcock Certificate Generator</h1>
-      <p className="home-subtitle">
-        Generate beautiful certificates for your events and participants
+      <h1> GDG Babcock Certificate Generator 🎓</h1>
+      <p className="home-subtitle"><strong>
+        Generate beautiful certificates for your events and participants</strong>
       </p>
       
       <div className="features-grid">
         <div className="feature-card">
-          <h3>� Certificate of Participation</h3>
+          <h3>🥇 Certificate of Participation</h3>
           <p>Generate participation certificates for event attendees</p>
           <Link to="/participation" className="feature-btn">
             Generate Participation
