@@ -6,7 +6,6 @@ const Navbar = () => (
       src="/gdg-favicon.svg"
       alt="GDG Babcock logo"
       className="navbar__logo"
-      aria-hidden="false"
     />
     <span className="navbar__brand">GDG Babcock</span>
   </nav>
