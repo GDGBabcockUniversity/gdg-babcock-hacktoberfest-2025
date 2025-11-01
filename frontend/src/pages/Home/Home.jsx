@@ -8,9 +8,7 @@ export default function Home() {
   return (
     <main className="home-main">
       <h1> GDG Babcock Certificate Generator 🎓</h1>
-      <p className="home-subtitle"><strong>
-        Generate beautiful certificates for your events and participants</strong>
-      </p>
+      <p className="home-subtitle"><strong>Generate beautiful certificates for your events and participants</strong></p>
       
       <div className="features-grid">
         <div className="feature-card">
