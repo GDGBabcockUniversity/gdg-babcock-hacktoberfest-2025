@@ -58,7 +58,17 @@ main.cert-completion-main {
   outline: 2px solid #646cff;
   border-color: #646cff;
 }
-
+.cert-form select {
+  padding: 0.7rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #444;
+  background: #23233a;
+  color: #fff;
+  font-size: 1rem;
+  margin-top: 0.1rem;
+  box-sizing: border-box;
+  width: 100%;
+}
 .cert-form button {
   margin-top: 1rem;
   background: #646cff;

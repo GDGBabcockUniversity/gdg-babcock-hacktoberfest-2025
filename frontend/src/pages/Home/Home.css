@@ -29,7 +29,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto 4rem auto;
   padding: 0 1rem;
 }
@@ -37,9 +37,9 @@
 .feature-card {
   background: white;
   color: #2c3e50;
-  padding: 2.5rem 2rem;
+  padding: 2rem 2rem;
   border-radius: 20px;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -63,7 +63,7 @@
 
 .feature-card p {
   font-size: 1.1rem;
-  color: #7f8c8d;
+  color: #4e5050;
   margin-bottom: 2rem;
   line-height: 1.6;
 }
@@ -84,7 +84,8 @@
 
 .feature-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 10px 30px rgba(6, 36, 168, 0.205);
+  color: white;
 }
 
 .new-badge {
@@ -102,10 +103,10 @@
 }
 
 .stats-section {
-  max-width: 800px;
+  max-width: 500px;
   margin: 0 auto 4rem auto;
   background: rgba(255, 255, 255, 0.1);
-  padding: 3rem 2rem;
+  padding: 2rem 2rem;
   border-radius: 20px;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -126,7 +127,7 @@
 .stat-item {
   text-align: center;
   padding: 2rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.108);
   border-radius: 15px;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }

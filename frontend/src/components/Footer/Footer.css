@@ -1,12 +1,80 @@
 .footer {
-  background: #222;
-  color: #fff;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  padding: 1.5rem 1rem;
   text-align: center;
-  padding: 1rem 0;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
+  margin-top: 4rem;
+  position: relative;
+  z-index: 10;
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.footer-text {
   font-size: 1rem;
-  position: fixed;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.social-icons {
+  display: flex;
+  gap: 1.25rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.social-link {
+  font-size: 1.5rem;
+  color: white;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  text-decoration: none;
+}
+
+.social-link:hover {
+  transform: translateY(-4px) scale(1.1);
+  background: white;
+  color: #4f46e5;
+}
+
+.social-link.instagram:hover {
+  background: radial-gradient(circle at 30% 107%, #d07932 0%, #d92475 60%, #9034c4 40%, #3541c9 90%);
+  color: white;
+}
+
+.social-link.twitter:hover {
+  background: #000;
+  color: white;
+}
+
+.social-link.linkedin:hover {
+  background: #0356e5;
+  color: white;
+}
+
+/* Mobile responsiveness*/
+@media (min-width: 640px) {
+  .footer-content {
+    flex-direction: row;
+    justify-content: space-between;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+}
+@media (min-width: 1024px) {
+  .footer {
+    padding: 2rem 1rem;
+  }
 }

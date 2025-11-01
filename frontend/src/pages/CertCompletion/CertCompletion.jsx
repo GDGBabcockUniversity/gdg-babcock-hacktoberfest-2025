@@ -104,8 +104,7 @@ const CertCompletion = () => {
             name="certificate_type"
             value={form.certificate_type}
             onChange={handleChange}
-            required
-          >
+            required>
             <option value="participation">Certificate of Participation</option>
             <option value="completion">Certificate of Completion</option>
           </select>
