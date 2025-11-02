@@ -17,7 +17,7 @@ const BulkCertificateForm = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
-  const API_BASE_URL = 'https://gdg-wrapped-backend-hacktoberfest.vercel.app';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
   const handleFormChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });

@@ -27,6 +27,17 @@ router = APIRouter()
 # In-memory store for demo; use DB in production
 # certificates = {}
 
+# Helper function to get the correct certificates directory
+def get_certificates_dir():
+    """
+    Returns the appropriate directory for storing certificates.
+    Uses /tmp on Vercel (serverless), ./certificates locally.
+    """
+    # Check if running on Vercel (has VERCEL env var)
+    if os.getenv("VERCEL"):
+        return "/tmp/certificates"
+    return "certificates"
+
 
 @router.post(
     "/",
@@ -95,7 +106,7 @@ async def create_certificate(
             date_issued=cert.date_issued
         )
 
-        output_dir = "certificates"
+        output_dir = get_certificates_dir()
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, cert_obj.filename)
 
@@ -193,7 +204,7 @@ async def get_certificate(
         if not db_cert:
             raise HTTPException(status_code=404, detail="Certificate record not found.")
 
-        file_path = os.path.join("certificates", db_cert.filename)
+        file_path = os.path.join(get_certificates_dir(), db_cert.filename)
         if not os.path.exists(file_path):
             logger.warning(f"File not found for certificate {unique_id}: {file_path}")
             raise HTTPException(status_code=404, detail="Certificate file missing on server.")
@@ -217,7 +228,7 @@ async def create_bulk_certificates(request: BulkCertificateRequest):
     Generate certificates for multiple participants
     """
     try:
-        output_dir = "certificates/bulk"
+        output_dir = os.path.join(get_certificates_dir(), "bulk")
         os.makedirs(output_dir, exist_ok=True)
         
         # Generate bulk certificates
@@ -305,7 +316,7 @@ async def download_bulk_certificates(filename: str):
     Download ZIP file containing bulk certificates
     """
     try:
-        file_path = os.path.join("certificates/bulk", filename)
+        file_path = os.path.join(get_certificates_dir(), "bulk", filename)
         
         if not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="Bulk certificate file not found")
