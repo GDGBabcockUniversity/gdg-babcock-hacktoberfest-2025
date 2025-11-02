@@ -15,7 +15,7 @@ const CertParticipation = () => {
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState(null);
 
-  const API_BASE_URL = "http://localhost:8000";
+  const API_BASE_URL = "https://gdg-wrapped-backend-hacktoberfest.vercel.app";
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
