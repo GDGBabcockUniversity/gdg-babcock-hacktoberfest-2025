@@ -1,8 +1,13 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import os
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./app.db"
+# Use /tmp for database on Vercel (serverless environment)
+if os.getenv("VERCEL"):
+    SQLALCHEMY_DATABASE_URL = "sqlite:////tmp/app.db"
+else:
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./app.db"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
