@@ -10,10 +10,11 @@ from ..models.certificates import (
 )
 from ..services.generator import generate_certificate
 from ..services.bulk_generator import (
-    process_csv_content, 
-    generate_bulk_certificates, 
+    process_csv_content,
+    generate_bulk_certificates,
     create_certificates_zip
 )
+from .deps import require_service_token
 import os
 import logging
 from sqlalchemy.orm import Session
@@ -51,7 +52,8 @@ def get_certificates_dir():
 )
 async def create_certificate(
     cert: CertificateCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_service_token)
 ):
     """
     Create a new digital certificate for a participant.
@@ -117,7 +119,8 @@ async def create_certificate(
                 cert_obj.event_name,
                 cert_obj.date_issued,
                 output_path,
-                certificate_type=cert.certificate_type
+                certificate_type=cert.certificate_type,
+                template=cert.template
             )
         except FileNotFoundError as e:
             logger.error(f"Template file missing: {e}")

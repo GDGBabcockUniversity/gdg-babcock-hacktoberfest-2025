@@ -15,6 +15,7 @@ sys.path.insert(0, project_root)  # backend/
 sys.path.insert(0, parent_dir)    # gdg-babcock-hacktoberfest-2025/
 
 from app.main import app
+from .conftest import AUTH_HEADERS
 
 class TestCertificateEndpoints:
     """
@@ -38,7 +39,7 @@ class TestCertificateEndpoints:
                 "date_issued": "2025-10-08"
             }
             
-            response = await client.post("/certificates/", json=data)
+            response = await client.post("/certificates/", json=data, headers=AUTH_HEADERS)
             
             # verify successful response
             assert response.status_code == 200
@@ -73,6 +74,46 @@ class TestCertificateEndpoints:
                 assert file_header == b'\x89PNG\r\n\x1a\n', "File is not a valid PNG"
     
     @pytest.mark.asyncio
+    async def test_post_certificate_missing_token(self):
+        """
+        Test POST /certificates/ - rejected without a service bearer token
+        """
+        async with httpx.AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test"
+        ) as client:
+            data = {
+                "participant_name": "Lionel Messi",
+                "event_name": "GDG Babcock Hacktoberfest 2025",
+                "date_issued": "2025-10-08"
+            }
+
+            response = await client.post("/certificates/", json=data)
+
+            assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_post_certificate_wrong_token(self):
+        """
+        Test POST /certificates/ - rejected with an incorrect service token
+        """
+        async with httpx.AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test"
+        ) as client:
+            data = {
+                "participant_name": "Lionel Messi",
+                "event_name": "GDG Babcock Hacktoberfest 2025",
+                "date_issued": "2025-10-08"
+            }
+
+            response = await client.post(
+                "/certificates/", json=data, headers={"Authorization": "Bearer wrong-token"}
+            )
+
+            assert response.status_code == 401
+
+    @pytest.mark.asyncio
     async def test_post_certificate_validation_error(self):
         """
         Test POST /certificates/ - validation failure with invalid data
@@ -88,7 +129,7 @@ class TestCertificateEndpoints:
                 "date_issued": "2025/10/15"  # wrong format (should be YYYY-MM-DD)
             }
             
-            response = await client.post("/certificates/", json=data)
+            response = await client.post("/certificates/", json=data, headers=AUTH_HEADERS)
             
             # should return validation error
             assert response.status_code == 422
@@ -110,7 +151,7 @@ class TestCertificateEndpoints:
                 # missing event_name and date_issued (required fields)
             }
             
-            response = await client.post("/certificates/", json=data)
+            response = await client.post("/certificates/", json=data, headers=AUTH_HEADERS)
             
             # should return validation error
             assert response.status_code == 422
@@ -153,7 +194,7 @@ class TestGetCertificateEndpoints:
                 "date_issued": "2025-10-08"
             }
 
-            post_response = await client.post("/certificates/", json=data)
+            post_response = await client.post("/certificates/", json=data, headers=AUTH_HEADERS)
             assert post_response.status_code == 200, "Certificate creation failed"
             post_json = post_response.json()
             unique_id = post_json["unique_id"]
@@ -199,7 +240,7 @@ class TestGetCertificateEndpoints:
                 "event_name": "GDG Babcock Hacktoberfest 2025",
                 "date_issued": "2025-10-08"
             }
-            post_response = await client.post("/certificates/", json=data)
+            post_response = await client.post("/certificates/", json=data, headers=AUTH_HEADERS)
             assert post_response.status_code == 200
             post_json = post_response.json()
             unique_id = post_json["unique_id"]

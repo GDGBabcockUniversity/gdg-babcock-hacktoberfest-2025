@@ -35,14 +35,25 @@ class CertificateBase(BaseModel):
         default="participation",
         description="Type of certificate: 'participation' or 'completion'"
     )
-    
+    template: str = Field(
+        default="hacktoberfest",
+        description="Template family to render onto: 'hacktoberfest' or 'gdg'"
+    )
+
     @validator('certificate_type')
     def validate_certificate_type(cls, v):
         """Validate certificate type"""
         if v not in ['participation', 'completion']:
             raise ValueError('Certificate type must be either "participation" or "completion"')
         return v
-    
+
+    @validator('template')
+    def validate_template(cls, v):
+        """Validate template family"""
+        if v not in ['hacktoberfest', 'gdg']:
+            raise ValueError('Template must be either "hacktoberfest" or "gdg"')
+        return v
+
     @validator('participant_name')
     def validate_participant_name(cls, v):
         """Validate participant name"""

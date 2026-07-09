@@ -6,30 +6,37 @@ def generate_certificate_from_model(cert_data: CertificateBase, output_path="cer
     # Now you can access cert_data.name, cert_data.event, cert_data.date
     return generate_certificate(cert_data.participant_name, cert_data.event_name, cert_data.date_issued, output_path)
 
-def generate_certificate(name, event, date, output_path="certificate.png", certificate_type="participation"):
+def generate_certificate(name, event, date, output_path="certificate.png", certificate_type="participation", template="hacktoberfest"):
     """
     Generate a certificate by overlaying text on a predefined template image.
-    
+
     Args:
         name: Participant's full name
         event: Event name
         date: Date in format YYYY-MM-DD or display format
         output_path: Where to save the generated certificate
-        certificate_type: "participation" or "completion" to select template
-    
+        certificate_type: "participation" or "completion" to select the layout
+        template: "hacktoberfest" or "gdg" to select the template family.
+            Falls back to the "hacktoberfest" template file if the "gdg" one
+            is not present on disk (e.g. before the asset has been added).
+
     Returns:
         output_path: Path to the generated certificate
     """
     # Debug: show where it will save
     print("Saving certificate at:", os.path.abspath(output_path))
-    
-    # Determine template path based on certificate type
+
+    # Determine template path based on template family + certificate type
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))  # Get backend root
-    if certificate_type == "completion":
-        template_path = os.path.join(base_dir, "templates", "completion_template.png")
-    else:  # default to participation
-        template_path = os.path.join(base_dir, "templates", "participation_template.png")
-    
+    suffix = "completion_template.png" if certificate_type == "completion" else "participation_template.png"
+
+    if template == "gdg":
+        template_path = os.path.join(base_dir, "templates", f"gdg_{suffix}")
+        if not os.path.exists(template_path):
+            template_path = os.path.join(base_dir, "templates", suffix)
+    else:
+        template_path = os.path.join(base_dir, "templates", suffix)
+
     # Verify template exists
     if not os.path.exists(template_path):
         raise FileNotFoundError(f"Certificate template not found at: {template_path}")
