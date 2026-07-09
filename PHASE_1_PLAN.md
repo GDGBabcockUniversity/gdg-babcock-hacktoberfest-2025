@@ -38,6 +38,8 @@ Rationale: `database/schema.sql` is applied manually with `psql -f` and contains
 Contents (match existing conventions: `gen_random_uuid()` UUID PKs, `TIMESTAMP WITH TIME ZONE`, `idx_<table>_<col>` names, reuse the existing `update_updated_at_column()` function — do not redefine it):
 
 ```sql
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- events
 CREATE TABLE IF NOT EXISTS events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -111,7 +113,7 @@ CREATE TRIGGER update_events_updated_at
   EXECUTE FUNCTION update_updated_at_column();
 ```
 
-Note: `certificates.status` is an addition beyond the spec's §3 sketch — it is required for the fault-tolerant issuance design (locked decision 1).
+Notes: `certificates.status` is an addition beyond the spec's §3 sketch — it is required for the fault-tolerant issuance design (locked decision 1). The trigger reuses `update_updated_at_column()`, which is defined by `schema.sql` — on a **fresh** dev database apply `schema.sql` once first (and never re-apply it; see Gotcha 1), then `002_events.sql`.
 
 **Verification gate A:** `psql "$DATABASE_URL" -f database/migrations/002_events.sql` succeeds; run it a **second time** to prove idempotency; then `psql "$DATABASE_URL" -c "\d events"` shows the columns above.
 
@@ -127,11 +129,11 @@ Follow the existing layering exactly: route → controller → service → model
 
 - `create(data)` / `update(id, data)` / `findById(id)` / `findBySlug(slug)`
 - `list({ status, upcoming })` — default `status='published'`; each row includes `registered_count` via subquery `(SELECT COUNT(*) FROM event_registrations r WHERE r.event_id = e.id AND r.status='registered')`.
-- `register(eventId, userId)` — **inside `transaction()`**: `SELECT ... FROM events WHERE id=$1 FOR UPDATE`; reject if status ≠ `'published'` (409); if `capacity IS NOT NULL`, `SELECT COUNT(*)` of registered rows and reject 409 "Event is full" if count ≥ capacity; then `INSERT ... ON CONFLICT (event_id, user_id) DO UPDATE SET status='registered', registered_at=CURRENT_TIMESTAMP WHERE event_registrations.status='cancelled'` (re-register after cancel; a live duplicate returns 0 rows → treat as 409 "Already registered").
+- `register(eventId, userId)` — **inside `transaction()`**: `SELECT ... FROM events WHERE id=$1 FOR UPDATE`; reject if status ≠ `'published'` (409); if `capacity IS NOT NULL`, `SELECT COUNT(*)` of registered rows and reject 409 "Event is full" if count ≥ capacity; then `INSERT ... ON CONFLICT (event_id, user_id) DO UPDATE SET status='registered', registered_at=CURRENT_TIMESTAMP WHERE event_registrations.status='cancelled' RETURNING id` — the `RETURNING` clause is how you detect the duplicate: re-register-after-cancel returns 1 row; a live duplicate returns 0 rows → 409 "Already registered".
 - `cancelRegistration(eventId, userId)` — `UPDATE event_registrations SET status='cancelled' WHERE event_id=$1 AND user_id=$2 AND status='registered'`.
 - `getRegistration(eventId, userId)`; `listAttendees(eventId)` — join `event_registrations` × `users` (id, full_name, email, matric_no, department), left-join `event_checkins` (checked_in_at), left-join `certificates` (status, download_url).
 - `checkIn(eventId, userId, adminId, certTitle)` — **inside `transaction()`**: verify a `registered` registration exists (else error → 404); `INSERT INTO event_checkins ... ON CONFLICT (event_id,user_id) DO NOTHING`; `INSERT INTO certificates (user_id, event_id, title, status) VALUES ($1,$2,$3,'pending') ON CONFLICT (user_id, event_id) DO NOTHING`; then `SELECT` and return the certificate row so retries get the existing row.
-- `markCertificateIssued(certId, uniqueId, downloadUrl)` / `markCertificateFailed(certId)`.
+- `markCertificateIssued(certId, uniqueId, downloadUrl)` — sets `status='issued'`, `cert_service_unique_id`, `download_url`, **and `issued_at=CURRENT_TIMESTAMP`** (the column has no default; forgetting it leaves issued certs with a NULL date on the profile). `markCertificateFailed(certId)` — sets `status='failed'`.
 
 ### B2. `auth/src/services/eventService.js` (new)
 
@@ -145,19 +147,26 @@ Thin `EventController` static handlers mapping service results to the existing r
 
 ```js
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
-router.get("/", EventController.list);                    // public, ?status=&upcoming=
+router.get("/", EventController.list);                    // public, published only, ?upcoming=
+router.get("/admin/all", authenticateToken, requireRole(["admin"]), EventController.adminList); // all statuses, ?status= filter
 router.get("/:slug", EventController.getBySlug);          // public (404 for non-published)
 router.post("/", authenticateToken, requireRole(["admin"]), EventController.create);
 router.put("/:id", authenticateToken, requireRole(["admin"]), EventController.update);
+router.get("/:id/registration", authenticateToken, EventController.myRegistration); // caller's own registration or null
 router.post("/:id/register", authenticateToken, EventController.register);
 router.delete("/:id/register", authenticateToken, EventController.cancelRegistration);
 router.post("/:id/checkin", authenticateToken, requireRole(["admin"]), EventController.checkIn); // body: { user_id }
 router.get("/:id/attendees", authenticateToken, requireRole(["admin"]), EventController.attendees);
 ```
 
-Notes: `requireRole` lives in `src/middleware/authMiddleware.js` but is unused today — **read its exact implementation before wiring** (argument shape, how it reads `req.user.roles`). Public `GET /:slug` returns 404 for anything not in `('published','ended')`; the admin UI reads drafts through `GET /events?status=draft` with an admin token (make `list` allow non-published statuses only when a valid admin token is present, otherwise force `published`). Mount in `app.js` next to the line-45 `/auth` mount: `app.use("/events", eventRoutes);`. Express 5 note: keep exactly one public GET-by-param route (`/:slug`) — do not add a separate public `GET /:id`.
+Notes:
+- `requireRole` lives in `src/middleware/authMiddleware.js` but is unused today. Its shape (verified): a factory `requireRole(roles)` accepting a string or array, reading `req.user.roles` and passing if the user has **any** listed role — `requireRole(["admin"])` as written above is correct. It must always be chained **after** `authenticateToken` (it only checks `req.user`).
+- **Admin draft listing is a separate authed route (`GET /events/admin/all`), not a query flag on the public list.** The public `GET /` deliberately has no `authenticateToken`, so `req.user` never exists there — a "show drafts if admin" conditional on that route can never fire. `EventController.list` always forces `status='published'`; `adminList` accepts any `?status=` filter. Register `/admin/all` above `/:slug` as shown (they can't actually collide — different segment counts — but the ordering keeps intent obvious).
+- Public `GET /:slug` returns 404 for anything not in `('published','ended')`.
+- `myRegistration` returns `{ success: true, registration: <row|null> }` — the website's register button needs this to decide Register vs Cancel on load.
+- Mount in `app.js` next to the line-45 `/auth` mount: `app.use("/events", eventRoutes);`. Express 5 note: keep exactly one public GET-by-param route (`/:slug`) — do not add a separate public `GET /:id`.
 
-**Verification gate B:** `node --check` each new file; start the server (`npm start` with a valid `DATABASE_URL`); curl matrix: (1) `GET /events` → `{ success:true, events: [] }`; (2) `POST /events` without token → 401, with non-admin token → 403, with admin token → 201 with slugged event (grant admin via SQL: `UPDATE users SET roles = array_append(roles,'admin') WHERE email='...'`); (3) register twice → second 409; (4) capacity=1 with two users → second 409; (5) `DELETE .../register` then re-`POST` → succeeds.
+**Verification gate B:** `node --check` each new file; start the server (`npm start` with a valid `DATABASE_URL`); curl matrix: (1) `GET /events` → `{ success:true, events: [] }`; (2) `POST /events` without token → 401, with non-admin token → 403, with admin token → 201 with slugged event (grant admin via SQL: `UPDATE users SET roles = array_append(roles,'admin') WHERE email='...'`); (3) draft event: absent from public `GET /events`, present in `GET /events/admin/all` with admin token, 403 with non-admin token; (4) register twice → second 409; (5) `GET /events/:id/registration` → row after registering, `null` before; (6) capacity=1 with two users → second 409; (7) `DELETE .../register` then re-`POST` → succeeds.
 
 ---
 
@@ -175,7 +184,7 @@ Replace `allow_origins=["*"]` (main.py:26) with an env-driven list: `ALLOWED_ORI
 
 ### C3. Generic GDG template — edit `app/services/generator.py` + request model
 
-- Add optional field `template: str = "hacktoberfest"` (allowed: `hacktoberfest`, `gdg`) to the POST request schema in `app/models/certificates.py`.
+- Add optional field `template: str = "hacktoberfest"` (allowed: `hacktoberfest`, `gdg`) to the POST request schema in `app/models/certificates.py`, validated with the same pydantic v1-style `@validator` decorator the file already uses for `certificate_type` — match the existing style, don't mix in v2 `field_validator`.
 - Generator selects the template file by `(template, certificate_type)`: gdg → `templates/gdg_participation_template.png` / `templates/gdg_completion_template.png`. **Fallback:** if the gdg file does not exist on disk, fall back to the existing hacktoberfest template (do not 500). Polished PNG assets are out of scope — generate a simple placeholder with a one-off Pillow script (`scripts/make_gdg_template.py`), **same pixel dimensions as the existing templates** so the hardcoded text coordinates in `generator.py` still land correctly.
 - Do **not** touch the `participant_name` regex.
 
@@ -228,19 +237,19 @@ Repo: `GDGWebsite`. **pnpm** (never npm/yarn), strict TS, `@/*` alias, Tailwind 
 ### F1. `GDGWebsite/lib/events-service.ts` (new)
 
 - Types: `EventSummary { id, slug, title, description, cover_image_url?, location?, starts_at, ends_at?, capacity?, status, certificate_type, registered_count? }`; `EventAttendee { user_id, full_name, email, matric_no?, department?, registered_at, checked_in_at?, certificate_status?, certificate_url? }`.
-- Base URL: reuse `AUTH_API_URL` from `lib/auth-service.ts` if exported; if module-private, duplicate the one-liner (`process.env.NEXT_PUBLIC_AUTH_API_URL || "https://auth.gdgbabcock.com"`) — do not refactor auth-service exports beyond what's needed.
+- Base URL: `AUTH_API_URL` in `lib/auth-service.ts` is **module-private (verified — not exported)**; duplicate the one-liner (`process.env.NEXT_PUBLIC_AUTH_API_URL || "https://auth.gdgbabcock.com"`) in events-service — do not refactor auth-service exports.
 - **Server-usable public fetchers** (no localStorage, safe in server components): `fetchPublishedEvents()` → `GET /events?status=published` with `{ next: { revalidate: 60 } }`; `fetchEventBySlug(slug)` → `GET /events/${slug}`, returns `null` on 404.
-- **Client-only authed actions** (copy the exact pattern from `lib/auth-service.ts`: `authHeaders(token)`, on 401 → `refreshAccessToken()` → retry once; tokens from localStorage keys `gdg_access_token`/`gdg_refresh_token`): `registerForEvent(eventId)`, `cancelRegistration(eventId)`, `createEvent(payload)`, `updateEvent(id, payload)`, `fetchAttendees(eventId)`, `checkInAttendee(eventId, userId)`, `fetchAdminEvents()`. Use the same tolerant response parse (`data.events || data.data?.events || data.data || data`).
+- **Client-only authed actions** (copy the exact pattern from `lib/auth-service.ts`: `authHeaders(token)`, on 401 → `refreshAccessToken()` → retry once; tokens from localStorage keys `gdg_access_token`/`gdg_refresh_token`): `registerForEvent(eventId)`, `cancelRegistration(eventId)`, `fetchMyRegistration(eventId)` (→ `GET /events/${id}/registration`, returns the row or null), `createEvent(payload)`, `updateEvent(id, payload)`, `fetchAttendees(eventId)`, `checkInAttendee(eventId, userId)`, `fetchAdminEvents(status?)` (→ `GET /events/admin/all`). Use the same tolerant response parse (`data.events || data.data?.events || data.data || data`).
 
 ### F2. `GDGWebsite/app/events/page.tsx` (new — **server component**)
 
-Async server component: `fetchPublishedEvents()`, partition into upcoming (`starts_at >= now`) and past, render cards (reuse existing card styling conventions, e.g. from `app/products/page.tsx`, and shadcn components) linking to `/events/${slug}`. `export const revalidate = 60`. Static `export const metadata` for the listing page (pattern: `title: "Events — GDG Babcock"`).
+Async server component: `fetchPublishedEvents()`, partition into upcoming (`starts_at >= now`) and past, render cards (reuse existing card styling conventions, e.g. from `app/products/page.tsx`) linking to `/events/${slug}`. `export const revalidate = 60`. Static `export const metadata` for the listing page (pattern: `title: "Events — GDG Babcock"`). Cover images: use a plain `<img>` (or `next/image`, which is already globally `unoptimized: true` in `next.config.mjs`) — do **not** add `remotePatterns` entries for event covers.
 
 ### F3. `GDGWebsite/app/events/[slug]/page.tsx` (new — server component, the repo's first dynamic route) + `GDGWebsite/components/events/register-button.tsx` (new — client island)
 
 - Page: `async function EventPage({ params }: { params: { slug: string } })` — in Next 14 `params` is a plain object (not a Promise; that's Next 15 — do not `await` it). `fetchEventBySlug` → `notFound()` on null. Renders detail + `<RegisterButton eventId={...} capacityFull={...} />`.
 - `export async function generateMetadata({ params })` — fetches the same event (Next fetch dedup makes the double call free) and returns `{ title, description, openGraph: { title, description, images: [cover_image_url], type: "article" } }`. This is the repo's **first** `generateMetadata` — there is no in-repo pattern to copy; use the standard Next 14 App Router signature.
-- `RegisterButton`: `"use client"`, uses `useAuth()` from `components/auth-provider.tsx`; unauthenticated → route into the existing login flow; authenticated → Register / Cancel via `events-service` actions, optimistic label swap, toast on 409 ("Event is full" / "Already registered").
+- `RegisterButton`: `"use client"`, uses `useAuth()` from `components/auth-provider.tsx`; unauthenticated → route into the existing login flow; authenticated → on mount call `fetchMyRegistration(eventId)` to decide the initial Register vs Cancel state, then Register / Cancel via `events-service` actions with an optimistic label swap. Errors (409 "Event is full" / "Already registered") render as **inline status text under the button** — no toast system is mounted in this app (`sonner` sits unused in package.json with no `<Toaster>` in the layout, and `components/ui/` contains only `button.tsx` and `input.tsx`); do not add toast infrastructure.
 
 **Verification gate F:** `pnpm tsc --noEmit` clean; `pnpm build` succeeds (dynamic route compiles); `pnpm dev` with `NEXT_PUBLIC_AUTH_API_URL=http://localhost:<auth-port>` → `/events` lists the published test event; `/events/<slug>` renders; `curl -s localhost:3000/events/<slug> | grep og:` shows OG tags in the **server-rendered HTML** (if OG tags are missing, the page accidentally became a client component); register button works end-to-end while logged in.
 
@@ -270,7 +279,7 @@ All admin pages are **client components** (the JWT lives in localStorage — ser
 
 ### H2. `GDGWebsite/app/admin/page.tsx` (new)
 
-Event list (all statuses via `fetchAdminEvents`), table with title/status/starts_at/registered_count, "New event" opening a form (shadcn Dialog or inline): fields title, description, location, starts_at (datetime-local), ends_at, capacity, status select, certificate_type select, cover_image_url. Create → `createEvent`; Edit reuses the same form with `updateEvent`. Row links to `/admin/events/[id]`.
+Event list (all statuses via `fetchAdminEvents`), table with title/status/starts_at/registered_count, "New event" opening an **inline form** — `components/ui/` contains only `button.tsx` and `input.tsx`, so do not reach for shadcn Dialog/Select/Table (they don't exist); build plain Tailwind markup, reusing the `FieldRow`/`SelectRow` patterns at the bottom of `app/profile/page.tsx`. Fields: title, description, location, starts_at (datetime-local), ends_at, capacity, status select, certificate_type select, cover_image_url. Create → `createEvent`; Edit reuses the same form with `updateEvent`. Row links to `/admin/events/[id]`.
 
 ### H3. `GDGWebsite/app/admin/events/[id]/page.tsx` (new)
 
@@ -296,9 +305,9 @@ With auth (local, dev Postgres), FastAPI (local, `CERT_SERVICE_TOKEN` set), and 
 
 1. `psql -f database/migrations/002_events.sql` twice — no errors.
 2. Admin token: create event → slug auto-generated; create a second event with the same title → slug gets `-2`.
-3. `GET /events` public shows only published; a draft event 404s at `GET /events/<draft-slug>`.
+3. `GET /events` public shows only published; a draft event 404s at `GET /events/<draft-slug>` but appears in `GET /events/admin/all` with an admin token.
 4. Website `/events` and `/events/[slug]` render; `curl | grep 'og:title'` finds OG meta.
-5. User registers via the UI; a capacity-1 event rejects a second user with a visible toast.
+5. User registers via the UI; the button shows Cancel on revisit (`fetchMyRegistration` works); a capacity-1 event rejects a second user with visible inline error text.
 6. Admin checks the user in via `/admin/events/[id]`; cert row `issued`; PNG downloads.
 7. Kill FastAPI, check in another user → check-in succeeds, cert `pending`; restart, retry → `issued`.
 8. `/auth/me` returns `user.activity.events_attended` and `user.certificates[]`; profile tiles light up.
@@ -321,4 +330,6 @@ Auth: `GET /events/:id/checkin-token` (admin) returns a short-lived (10 min) JWT
 7. **pnpm, not npm** in GDGWebsite; plain `npm` in auth.
 8. **Server/client split for OG:** `app/events/page.tsx` and `app/events/[slug]/page.tsx` must stay server components (no `"use client"`, no localStorage) or `generateMetadata` OG tags break; interactivity lives only in small client islands. Admin pages are the opposite: fully client, because tokens are in localStorage.
 9. **`/auth/me` shape:** `activity` and `certificates` nest inside `user`; certificate keys are exactly `id, title, event, issued_at, url`; `download_url` must be stored/returned absolute; pg `COUNT` returns strings — parseInt before returning.
-10. **`requireRole` is currently dead code** — read its implementation before wiring; don't assume its argument shape.
+10. **`requireRole` is currently dead code** — its verified shape is a factory taking a string or array and checking `req.user.roles` for any match; it must be chained after `authenticateToken`.
+11. **`pnpm build` is not a type gate:** `next.config.mjs` sets `typescript.ignoreBuildErrors: true` and `eslint.ignoreDuringBuilds: true` — a green build says nothing about type errors. `pnpm tsc --noEmit` is the only real TypeScript check; run it at every website gate and never skip it because the build passed.
+12. **UI inventory is minimal:** `components/ui/` has only `button.tsx` and `input.tsx`, and no toast system is mounted. Build plain Tailwind forms/tables and inline status text; do not install or scaffold UI libraries.
